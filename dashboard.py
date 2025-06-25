@@ -7,7 +7,7 @@ import sqlite3
 import json
 import urllib.request
 
-def load_excel_to_sqlite_from_url(url, db_name='panel_riesgo.db'):
+df = pd.read_excel('temp_excel.xlsx', engine='openpyxl')(url, db_name='panel_riesgo.db'):
     urllib.request.urlretrieve(url, 'temp_excel.xlsx')
     df = pd.read_excel('temp_excel.xlsx')
     df.fillna(0, inplace=True)
