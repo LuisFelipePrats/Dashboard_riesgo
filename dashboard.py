@@ -67,7 +67,12 @@ df = pd.read_excel('temp_excel.xlsx', engine='openpyxl')(url, db_name='panel_rie
 
 # Reemplaza con tu enlace de Google Drive
 import os
-load_excel_to_sqlite_from_url(os.getenv("GOOGLE_DRIVE_URL"))
+def load_excel_to_sqlite_from_url(url, db_name='panel_riesgo.db'):
+    urllib.request.urlretrieve(url, 'temp_excel.xlsx')
+    df = pd.read_excel('temp_excel.xlsx', engine='openpyxl')
+    df.fillna(0, inplace=True)
+    df['id'] = df['Rut'].astype(str)
+    # resto del código...(os.getenv("GOOGLE_DRIVE_URL"))
 
 def calcular_nota_comportamiento(dicom, deuda_tgr, cumplimiento, multas):
     try:
