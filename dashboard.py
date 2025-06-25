@@ -68,11 +68,34 @@ df = pd.read_excel('temp_excel.xlsx', engine='openpyxl')(url, db_name='panel_rie
 # Reemplaza con tu enlace de Google Drive
 import os
 def load_excel_to_sqlite_from_url(url, db_name='panel_riesgo.db'):
+    # Descargar el archivo desde la URL
     urllib.request.urlretrieve(url, 'temp_excel.xlsx')
+    # Leer el archivo Excel con el motor especificado
     df = pd.read_excel('temp_excel.xlsx', engine='openpyxl')
+    # Resto del procesamiento
     df.fillna(0, inplace=True)
     df['id'] = df['Rut'].astype(str)
-    # resto del código...(os.getenv("GOOGLE_DRIVE_URL"))
+    df['nombre'] = df['Cliente'].astype(str)
+    df['comportamiento'] = df.apply(
+        lambda row: json.dumps({
+            'dicom': row['Dicom (MM$)'],
+            'deuda_tgr': row['Deuda TGR (MM$)'],
+            'cumplimiento': row['Cumplimiento de pago (días)'],
+            'multas_cte': row['Multas CTE (MM$)']
+        }), axis=1
+    )
+    # (Continúa con las otras columnas: solvencia, rentabilidad, solidez, calidad_deudores)
+    columns = ['id', 'nombre', 'grupo', 'sector', 'producto', 'linea_aprobada', 'linea_utilizada',
+               'dicom_marzo', 'dicom_abril', 'dicom_mayo', 'dicom_junio', 'dicom_julio', 'promedio_dicom',
+               'montos_demandas', 'comportamiento', 'solvencia', 'rentabilidad', 'solidez', 'calidad_deudores']
+    for col in columns:
+        if col not in df.columns:
+            df[col] = 0 if col.startswith('dicom') or col.startswith('linea') or col == 'montos_demandas' else ''
+    df = df[columns]
+    # Guardar en SQLite
+    conn = sqlite3.connect(db_name)
+    df.to_sql('clientes', conn, if_exists='replace', index=False)
+    conn.close()
 
 def calcular_nota_comportamiento(dicom, deuda_tgr, cumplimiento, multas):
     try:
