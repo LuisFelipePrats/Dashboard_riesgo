@@ -66,7 +66,8 @@ def load_excel_to_sqlite_from_url(url, db_name='panel_riesgo.db'):
     conn.close()
 
 # Reemplaza con tu enlace de Google Drive
-load_excel_to_sqlite_from_url("https://drive.google.com/uc?export=download&id=TU_ENLACE")
+import os
+load_excel_to_sqlite_from_url(os.getenv("GOOGLE_DRIVE_URL"))
 
 def calcular_nota_comportamiento(dicom, deuda_tgr, cumplimiento, multas):
     try:
