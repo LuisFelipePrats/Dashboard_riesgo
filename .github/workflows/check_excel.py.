@@ -1,0 +1,78 @@
+import requests
+import pandas as pd
+import sqlite3
+import json
+import hashlib
+
+def get_file_hash(url):
+    response = requests.get(url)
+    return hashlib.md5(response.content).hexdigest()
+
+def load_excel_to_sqlite_from_url(url, db_name='schema.sql'):
+    df = pd.read_excel(url)
+    df.fillna(0, inplace=True)
+    df['id'] = df['Rut'].astype(str)
+    df['nombre'] = df['Cliente'].astype(str)
+    df['comportamiento'] = df.apply(
+        lambda row: json.dumps({
+            'dicom': row['Dicom (MM$)'],
+            'deuda_tgr': row['Deuda TGR (MM$)'],
+            'cumplimiento': row['Cumplimiento de pago (días)'],
+            'multas_cte': row['Multas CTE (MM$)']
+        }), axis=1
+    )
+    df['solvencia'] = df.apply(
+        lambda row: json.dumps({
+            'patrimonio': row['Patrimonio (MM$)'],
+            'razon_corriente': row['Razón corriente'],
+            'deuda_patrimonio': row['Deuda/ Patrimonio']
+        }), axis=1
+    )
+    df['rentabilidad'] = df.apply(
+        lambda row: json.dumps({
+            'margen': row['Margen (resultado bruto)'],
+            'resultado_antes': row['Resultado antes impuestos'],
+            'resultado_despues': row['Resultado dp impuestos'],
+            'gastos_financieros': row['Gastos financieros']
+        }), axis=1
+    )
+    df['solidez'] = df.apply(
+        lambda row: json.dumps({
+            'controladores': row['Controladores reconocidos'],
+            'sector': row['Industria o sector económico'],
+            'tamano': row['Tamaño de la Empresa'],
+            'antiguedad': row['Antigüedad (años)'],
+            'bolsas': row['Registro en bolsas internacionales, IPSA o multinacional']
+        }), axis=1
+    )
+    df['calidad_deudores'] = df.apply(
+        lambda row: json.dumps({
+            'dicom_deudores': row['Dicom deudores (MM$)'],
+            'liquidez_deudores': row['Liquidez deudores'],
+            'rentabilidad_deudores': row['Rentabilidad de deudores'],
+            'solidez_deudores': row['Solidez institucional deudores'],
+            'tamano_deudores': row['Tamaño y trayectoria deudores']
+        }), axis=1
+    )
+    columns = ['id', 'nombre', 'grupo', 'sector', 'producto', 'linea_aprobada', 'linea_utilizada',
+               'dicom_marzo', 'dicom_abril', 'dicom_mayo', 'dicom_junio', 'dicom_julio', 'promedio_dicom',
+               'montos_demandas', 'comportamiento', 'solvencia', 'rentabilidad', 'solidez', 'calidad_deudores']
+    for col in columns:
+        if col not in df.columns:
+            df[col] = 0 if col.startswith('dicom') or col.startswith('linea') or col == 'montos_demandas' else ''
+    df = df[columns]
+    conn = sqlite3.connect(db_name)
+    df.to_sql('clientes', conn, if_exists='replace', index=False)
+    conn.close()
+
+GOOGLE_DRIVE_URL = "https://docs.google.com/spreadsheets/d/1TZBVU_Q-FXl1H7x3tLdIcAq_gfROd1nR/edit?usp=drivesdk&ouid=105063465676627128073&rtpof=true&sd=true"
+try:
+    with open('last_hash.txt', 'r') as f:
+        last_hash = f.read()
+except FileNotFoundError:
+    last_hash = ""
+current_hash = get_file_hash(GOOGLE_DRIVE_URL)
+if current_hash != last_hash:
+    load_excel_to_sqlite_from_url(GOOGLE_DRIVE_URL)
+    with open('last_hash.txt', 'w') as f:
+        f.write(current_hash)
