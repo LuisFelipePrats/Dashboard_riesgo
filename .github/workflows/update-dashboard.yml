@@ -1,0 +1,26 @@
+name: Actualizar Dashboard
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Ejecuta todos los días a medianoche UTC
+  workflow_dispatch:      # Permite ejecutarlo manualmente
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+
+    - name: Install dependencies
+      run: |
+        pip install pandas openpyxl
+
+    - name: Check Excel file
+      run: python check_excel.py
