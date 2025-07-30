@@ -1,33 +1,26 @@
 name: Actualizar Dashboard
+
 on:
   schedule:
-    - cron: '0 */6 * * *' # Ejecutar cada 6 horas
-  push:
-    branches:
-      - main
+    - cron: '0 0 * * *'  # Ejecuta todos los días a medianoche UTC
+  workflow_dispatch:      # Permite ejecutarlo manualmente
+
 jobs:
-  update:
+  build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout código
-        uses: actions/checkout@v3
-      - name: Configurar Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.9'
-      - name: Instalar dependencias
-        run: |
-          pip install requests pandas
-      - name: Verificar cambios en Google Drive
-        run: |
-          python check_excel.py
-      - name: Commit cambios
-        run: |
-          git config --global user.name 'GitHub Action'
-          git config --global user.email 'action@github.com'
-          git add panel_riesgo.db
-          git commit -m 'Actualizar base de datos' || echo "Sin cambios"
-          git push
-      - name: Disparar redeploy en Render
-        run: |
-          curl -X POST https://api.render.com/v1/services/YOUR_RENDER_SERVICE_ID/deploys -H "Authorization: Bearer YOUR_RENDER_API_TOKEN"
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+
+    - name: Install dependencies
+      run: |
+        pip install pandas openpyxl
+
+    - name: Check Excel file
+      run: python check_excel.py
