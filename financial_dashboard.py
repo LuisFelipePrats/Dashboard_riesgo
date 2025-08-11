@@ -7,6 +7,7 @@ import sqlite3
 import urllib.request
 import os
 import sys
+import time
 
 print("Iniciando el script...")
 
@@ -17,9 +18,10 @@ df_global = None
 url = "https://drive.google.com/uc?export=download&id=1YfTmNvqU88XT7_ArGHC0YVlm9dgLVy1z"
 
 try:
-    # Descargar el archivo desde la URL
-    urllib.request.urlretrieve(url, 'temp_excel.xlsx')
-    print("Archivo descargado correctamente.")
+    # Verificar o descargar el archivo si es necesario (actualiza cada hora)
+    if not os.path.exists('temp_excel.xlsx') or os.path.getmtime('temp_excel.xlsx') < time.time() - 3600:
+        urllib.request.urlretrieve(url, 'temp_excel.xlsx')
+    print("Archivo verificado o descargado correctamente.")
 
     # Leer el Excel
     df = pd.read_excel('temp_excel.xlsx', sheet_name='Ratios financieros')
@@ -49,13 +51,13 @@ try:
     app = dash.Dash(__name__)
     print("Dashboard configurado.")
 
-    app.layout = html.Div([
-        html.H1("Dashboard Financiero", style={'textAlign': 'center'}),
+    app.layout = html.Div(style={'backgroundColor': '#f8f9fa', 'padding': '20px'}, children=[
+        html.H1("Dashboard Financiero Mejorado", style={'textAlign': 'center', 'color': '#2c3e50'}),
         dcc.Dropdown(
             id='cliente-dropdown',
             options=[{'label': row['Cliente (Ordenado por colocación)'], 'value': idx} for idx, row in df_global.iterrows()],
             value=df_global.index[0] if not df_global.empty else None,
-            style={'width': '50%', 'margin': 'auto'}
+            style={'width': '50%', 'margin': 'auto', 'backgroundColor': '#ffffff', 'border': '1px solid #007bff'}
         ),
         html.Div(id='output-div', style={'padding': '20px'}),
         dcc.Graph(id='ventas-graph', style={'width': '100%', 'height': '400px'}),
@@ -84,19 +86,19 @@ try:
             gastos_financieros = float(str(selected['Gastos financieros']).replace(',', '').strip() or 0)
             liquidez_inmediata = float(str(selected['Liquidez Inmediata']).replace(',', '').strip() or 0)
 
-            # Resumen con todos los indicadores
+            # Resumen con todos los indicadores en tarjetas
             resumen = html.Div([
                 html.H3(f"Cliente: {selected['Cliente (Ordenado por colocación)']}"),
-                html.P(f"Ventas anuales: ${ventas_anuales:.2f}"),
-                html.P(f"Deuda/Patrimonio: {deuda_patrimonio:.2f}"),
-                html.P(f"Patrimonio: ${patrimonio:.2f}"),
-                html.P(f"Razón corriente: {razon_corriente:.2f}"),
-                html.P(f"Margen (resultado bruto): {margen:.2f}"),
-                html.P(f"Resultado antes de impuestos: ${resultado_antes:.2f}"),
-                html.P(f"Resultado después de impuestos: ${resultado_despues:.2f}"),
-                html.P(f"Gastos financieros: ${gastos_financieros:.2f}"),
-                html.P(f"Liquidez Inmediata: {liquidez_inmediata:.2f}")
-            ], style={'columnCount': 2, 'padding': '10px'})
+                html.Div(f"Ventas anuales: ${ventas_anuales:.2f}", style={'backgroundColor': '#d4edda', 'padding': '10px', 'margin': '5px'}),
+                html.Div(f"Deuda/Patrimonio: {deuda_patrimonio:.2f}", style={'backgroundColor': '#f8d7da', 'padding': '10px', 'margin': '5px'}),
+                html.Div(f"Patrimonio: ${patrimonio:.2f}", style={'backgroundColor': '#d4edda', 'padding': '10px', 'margin': '5px'}),
+                html.Div(f"Razón corriente: {razon_corriente:.2f}", style={'backgroundColor': '#d4edda', 'padding': '10px', 'margin': '5px'}),
+                html.Div(f"Margen (resultado bruto): {margen:.2f}", style={'backgroundColor': '#d4edda', 'padding': '10px', 'margin': '5px'}),
+                html.Div(f"Resultado antes de impuestos: ${resultado_antes:.2f}", style={'backgroundColor': '#d4edda', 'padding': '10px', 'margin': '5px'}),
+                html.Div(f"Resultado después de impuestos: ${resultado_despues:.2f}", style={'backgroundColor': '#d4edda', 'padding': '10px', 'margin': '5px'}),
+                html.Div(f"Gastos financieros: ${gastos_financieros:.2f}", style={'backgroundColor': '#f8d7da', 'padding': '10px', 'margin': '5px'}),
+                html.Div(f"Liquidez Inmediata: {liquidez_inmediata:.2f}", style={'backgroundColor': '#d4edda', 'padding': '10px', 'margin': '5px'})
+            ], style={'display': 'grid', 'gridTemplateColumns': 'repeat(2, 1fr)'})
 
             # Gráfico de ventas por cliente
             fig_sales = px.bar(df_global, x='Cliente (Ordenado por colocación)', y='Ventas anuales',
@@ -110,10 +112,10 @@ try:
         except Exception as e:
             return html.Div(f"Error en callback: {str(e)}"), px.bar(), px.pie()
 
-    print("Intentando iniciar el servidor en 0.0.0.0:PORT...")
-    port = int(os.environ.get('PORT', 10000))
-    print(f"Iniciando servidor en 0.0.0.0:{port}...")
-    app.run(debug=True, host='0.0.0.0', port=port)
+         print("Intentando iniciar el servidor en 0.0.0.0:PORT...")
+         port = int(os.environ.get('PORT', 10000))
+         print(f"Iniciando servidor en 0.0.0.0:{port}...")
+         app.run(debug=True, host='0.0.0.0', port=port)
 
 except Exception as e:
     print(f"Error crítico: {e}", file=sys.stderr)
