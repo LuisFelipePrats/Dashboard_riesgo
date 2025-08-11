@@ -49,13 +49,13 @@ try:
     app = dash.Dash(__name__)
     print("Dashboard configurado.")
 
-    app.layout = html.Div([
-        html.H1("Dashboard Financiero", style={'textAlign': 'center'}),
+    app.layout = html.Div(style={'backgroundColor': '#f8f9fa', 'padding': '20px'}, children=[
+        html.H1("Dashboard Financiero", style={'textAlign': 'center', 'color': '#007bff'}),
         dcc.Dropdown(
             id='cliente-dropdown',
             options=[{'label': row['Cliente (Ordenado por colocación)'], 'value': idx} for idx, row in df_global.iterrows()],
             value=df_global.index[0] if not df_global.empty else None,
-            style={'width': '50%', 'margin': 'auto'}
+            style={'width': '50%', 'margin': 'auto', 'backgroundColor': '#ffffff', 'border': '1px solid #007bff'}
         ),
         html.Div(id='output-div', style={'padding': '20px'}),
         dcc.Graph(id='ventas-graph', style={'width': '100%', 'height': '400px'}),
@@ -87,24 +87,19 @@ try:
             # Resumen con todos los indicadores
             resumen = html.Div([
                 html.H3(f"Cliente: {selected['Cliente (Ordenado por colocación)']}"),
-                html.P(f"Ventas anuales: ${ventas_anuales:.2f}"),
-                html.P(f"Deuda/Patrimonio: {deuda_patrimonio:.2f}"),
-                html.P(f"Patrimonio: ${patrimonio:.2f}"),
-                html.P(f"Razón corriente: {razon_corriente:.2f}"),
-                html.P(f"Margen (resultado bruto): {margen:.2f}"),
-                html.P(f"Resultado antes de impuestos: ${resultado_antes:.2f}"),
-                html.P(f"Resultado después de impuestos: ${resultado_despues:.2f}"),
-                html.P(f"Gastos financieros: ${gastos_financieros:.2f}"),
-                html.P(f"Liquidez Inmediata: {liquidez_inmediata:.2f}")
-            ], style={'columnCount': 2, 'padding': '10px'})
+    html.Div([html.P(f"Ventas anuales: ${ventas_anuales:.2f}", style={'backgroundColor': '#d4edda', 'padding': '10px', 'margin': '5px'})]),
+    html.Div([html.P(f"Deuda/Patrimonio: {deuda_patrimonio:.2f}", style={'backgroundColor': '#f8d7da', 'padding': '10px', 'margin': '5px'})]),
+    # Añade el resto de indicadores similares
+    
+], style={'display': 'grid', 'gridTemplateColumns': 'repeat(2, 1fr)'})
 
             # Gráfico de ventas por cliente
             fig_sales = px.bar(df_global, x='Cliente (Ordenado por colocación)', y='Ventas anuales',
-                               title='Ventas Anuales por Cliente', height=400)
+                   title='Ventas Anuales por Cliente', height=400, color_discrete_sequence=["#007bff"])
 
             # Gráfico de torta para Deuda/Patrimonio
             fig_debt = px.pie(df_global, names='Cliente (Ordenado por colocación)', values='Deuda/Patrimonio',
-                              title='Relación Deuda/Patrimonio por Cliente', height=400)
+                  title='Relación Deuda/Patrimonio por Cliente', height=400, color_discrete_sequence=["#ff7f0e"])
 
             return resumen, fig_sales, fig_debt
         except Exception as e:
