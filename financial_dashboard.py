@@ -8,44 +8,45 @@ import urllib.request
 import os
 import sys
 
+# Print startup message
 print("Iniciando el script...")
 
-# Variable global para almacenar el DataFrame
+# Global variable to store the DataFrame
 df_global = None
 
-# URL de Google Drive (ya proporcionada)
+# Google Drive URL (replace with your ID if needed)
 url = "https://drive.google.com/uc?export=download&id=1YfTmNvqU88XT7_ArGHC0YVlm9dgLVy1z"
 
 try:
-    # Descargar el archivo desde la URL
+    # Download the file from the URL
     urllib.request.urlretrieve(url, 'temp_excel.xlsx')
     print("Archivo descargado correctamente.")
 
-    # Leer el Excel
+    # Read the Excel file
     df = pd.read_excel('temp_excel.xlsx', sheet_name='Ratios financieros')
     print("Excel leído correctamente. Columnas:", df.columns.tolist())
-    df.fillna(0, inplace=True)
+    df.fillna(0, inplace=True)  # Fill missing values with 0
 
-    # Guardar en SQLite
+    # Save to SQLite
     db_name = 'panel_riesgo.db'
     conn = sqlite3.connect(db_name)
     df.to_sql('datos_riesgo', conn, if_exists='replace', index=False)
     conn.close()
     print("Datos guardados en", db_name)
 
-    # Cargar datos desde SQLite y almacenar globalmente
+    # Load data from SQLite and store globally
     conn = sqlite3.connect(db_name)
     df_global = pd.read_sql_query("SELECT * FROM datos_riesgo", conn)
     conn.close()
     print("Datos cargados desde SQLite. Filas:", len(df_global))
 
-    # Verificar datos antes de configurar Dash
+    # Verify data before setting up Dash
     if df_global.empty:
         print("Error: El DataFrame está vacío.")
         sys.exit(1)
     print("Datos verificados. Preparando dashboard...")
 
-    # Configurar el dashboard
+    # Set up the dashboard
     app = dash.Dash(__name__)
     print("Dashboard configurado.")
 
@@ -73,7 +74,7 @@ try:
             return html.Div("No hay datos para mostrar o error en el callback."), px.bar(), px.pie()
         try:
             selected = df_global.iloc[value]
-            # Convertir a float, manejando valores no numéricos
+            # Convert to float, handling non-numeric values
             ventas_anuales = float(str(selected['Ventas anuales']).replace('$', '').replace(',', '').strip() or 0)
             deuda_patrimonio = float(str(selected['Deuda/Patrimonio']).replace(',', '').strip() or 0)
             patrimonio = float(str(selected['Patrimonio']).replace(',', '').strip() or 0)
@@ -84,7 +85,7 @@ try:
             gastos_financieros = float(str(selected['Gastos financieros']).replace(',', '').strip() or 0)
             liquidez_inmediata = float(str(selected['Liquidez Inmediata']).replace(',', '').strip() or 0)
 
-            # Resumen con todos los indicadores
+            # Summary with all indicators
             resumen = html.Div([
                 html.H3(f"Cliente: {selected['Cliente (Ordenado por colocación)']}"),
                 html.P(f"Ventas anuales: ${ventas_anuales:.2f}"),
@@ -98,11 +99,11 @@ try:
                 html.P(f"Liquidez Inmediata: {liquidez_inmediata:.2f}")
             ], style={'columnCount': 2, 'padding': '10px'})
 
-            # Gráfico de ventas por cliente
+            # Sales bar graph
             fig_sales = px.bar(df_global, x='Cliente (Ordenado por colocación)', y='Ventas anuales',
                                title='Ventas Anuales por Cliente', height=400)
 
-            # Gráfico de torta para Deuda/Patrimonio
+            # Debt pie graph
             fig_debt = px.pie(df_global, names='Cliente (Ordenado por colocación)', values='Deuda/Patrimonio',
                               title='Relación Deuda/Patrimonio por Cliente', height=400)
 
